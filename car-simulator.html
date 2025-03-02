@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Car Simulator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #333;
+            font-family: Arial, sans-serif;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-color: #222;
+        }
+        
+        #road {
+            position: absolute;
+            width: 70%;
+            height: 100%;
+            left: 15%;
+            background-color: #444;
+        }
+        
+        .lane-marker {
+            position: absolute;
+            width: 10px;
+            height: 60px;
+            background-color: white;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        #car {
+            position: absolute;
+            width: 50px;
+            height: 80px;
+            background-color: red;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 5px;
+        }
+        
+        .obstacle {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            background-color: blue;
+            border-radius: 5px;
+        }
+        
+        #score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+        }
+        
+        #speed-display {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            color: white;
+            font-size: 18px;
+        }
+        
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: red;
+            font-size: 48px;
+            font-weight: bold;
+            display: none;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        #restart-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: white;
+            color: black;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="road"></div>
+        <div id="car"></div>
+        <div id="score-display">Score: 0</div>
+        <div id="speed-display">Speed: 0 mph</div>
+        <div id="game-over">
+            GAME OVER
+            <div>Your score: <span id="final-score">0</span></div>
+            <button id="restart-button">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Game variables
+            let gameActive = true;
+            let score = 0;
+            let speed = 5;
+            let maxSpeed = 15;
+            let acceleration = 0.005;
+            let carPosition = 50; // percentage from left
+            let laneMarkers = [];
+            let obstacles = [];
+            let obstacleSpeed = 5;
+            let lastFrameTime = 0;
+            let roadWidth = $('#road').width();
+            let roadLeft = $('#road').offset().left;
+            
+            // Create lane markers
+            function createLaneMarkers() {
+                const roadElement = $('#road');
+                const roadHeight = roadElement.height();
+                
+                // Clear existing markers
+                $('.lane-marker').remove();
+                laneMarkers = [];
+                
+                // Create markers down the center
+                const spacing = 100; // px between markers
+                const numMarkers = Math.ceil(roadHeight / spacing) + 1;
+                
+                for (let i = 0; i < numMarkers; i++) {
+                    const marker = $('<div class="lane-marker"></div>');
+                    marker.css('top', (i * spacing) - (speed * 10) % spacing);
+                    roadElement.append(marker);
+                    laneMarkers.push({
+                        element: marker,
+                        position: (i * spacing) - (speed * 10) % spacing
+                    });
+                }
+            }
+            
+            // Update lane markers
+            function updateLaneMarkers(deltaTime) {
+                laneMarkers.forEach(marker => {
+                    marker.position += speed * deltaTime * 0.1;
+                    
+                    if (marker.position > $('#road').height()) {
+                        marker.position = -60;
+                    }
+                    
+                    marker.element.css('top', marker.position);
+                });
+            }
+            
+            // Create a new obstacle
+            function createObstacle() {
+                if (!gameActive) return;
+                
+                const roadWidth = $('#road').width();
+                const laneWidth = roadWidth / 3;
+                
+                // Randomly choose a lane (0, 1, or 2)
+                const lane = Math.floor(Math.random() * 3);
+                const leftPosition = (lane * laneWidth) + (laneWidth / 2) - 20;
+                
+                const obstacle = $('<div class="obstacle"></div>');
+                obstacle.css({
+                    left: leftPosition,
+                    top: -60
+                });
+                
+                $('#road').append(obstacle);
+                
+                obstacles.push({
+                    element: obstacle,
+                    left: leftPosition,
+                    top: -60
+                });
+                
+                // Schedule next obstacle
+                const nextObstacleTime = 2000 - (speed * 100);
+                setTimeout(createObstacle, Math.max(500, nextObstacleTime));
+            }
+            
+            // Update obstacles
+            function updateObstacles(deltaTime) {
+                for (let i = obstacles.length - 1; i >= 0; i--) {
+                    const obstacle = obstacles[i];
+                    obstacle.top += obstacleSpeed * deltaTime * 0.1;
+                    
+                    if (obstacle.top > $('#road').height()) {
+                        obstacle.element.remove();
+                        obstacles.splice(i, 1);
+                        score += 10;
+                        updateScore();
+                    } else {
+                        obstacle.element.css('top', obstacle.top);
+                        
+                        // Check collision
+                        if (checkCollision(obstacle)) {
+                            gameOver();
+                        }
+                    }
+                }
+            }
+            
+            // Check collision between car and obstacle
+            function checkCollision(obstacle) {
+                const carLeft = parseInt($('#car').css('left'));
+                const carTop = parseInt($('#car').css('top'));
+                const carWidth = $('#car').width();
+                const carHeight = $('#car').height();
+                
+                const obstacleLeft = roadLeft + obstacle.left;
+                const obstacleTop = obstacle.top;
+                const obstacleWidth = obstacle.element.width();
+                const obstacleHeight = obstacle.element.height();
+                
+                return (
+                    carLeft < obstacleLeft + obstacleWidth &&
+                    carLeft + carWidth > obstacleLeft &&
+                    carTop < obstacleTop + obstacleHeight &&
+                    carTop + carHeight > obstacleTop
+                );
+            }
+            
+            // Update score display
+            function updateScore() {
+                $('#score-display').text(`Score: ${score}`);
+                $('#speed-display').text(`Speed: ${Math.floor(speed * 10)} mph`);
+            }
+            
+            // Game over function
+            function gameOver() {
+                gameActive = false;
+                $('#final-score').text(score);
+                $('#game-over').show();
+            }
+            
+            // Initialize the game
+            function initGame() {
+                gameActive = true;
+                score = 0;
+                speed = 5;
+                obstacles.forEach(obstacle => obstacle.element.remove());
+                obstacles = [];
+                $('#game-over').hide();
+                updateScore();
+                
+                // Position car
+                carPosition = 50;
+                updateCarPosition();
+                
+                // Create lane markers
+                createLaneMarkers();
+                
+                // Start creating obstacles
+                setTimeout(createObstacle, 1000);
+                
+                // Start game loop
+                requestAnimationFrame(gameLoop);
+            }
+            
+            // Update car position based on carPosition percentage
+            function updateCarPosition() {
+                const roadWidth = $('#road').width();
+                const carWidth = $('#car').width();
+                const roadLeft = $('#road').offset().left;
+                
+                const newLeft = roadLeft + (roadWidth * carPosition / 100) - (carWidth / 2);
+                $('#car').css('left', newLeft);
+            }
+            
+            // Game loop
+            function gameLoop(timestamp) {
+                if (!lastFrameTime) {
+                    lastFrameTime = timestamp;
+                }
+                
+                const deltaTime = timestamp - lastFrameTime;
+                lastFrameTime = timestamp;
+                
+                if (gameActive) {
+                    // Increase speed gradually
+                    speed = Math.min(maxSpeed, speed + acceleration * deltaTime);
+                    obstacleSpeed = speed;
+                    
+                    updateLaneMarkers(deltaTime);
+                    updateObstacles(deltaTime);
+                    updateScore();
+                    
+                    requestAnimationFrame(gameLoop);
+                }
+            }
+            
+            // Handle keyboard input
+            $(document).keydown(function(e) {
+                if (!gameActive) return;
+                
+                // Left arrow
+                if (e.which === 37) {
+                    carPosition = Math.max(10, carPosition - 5);
+                }
+                // Right arrow
+                else if (e.which === 39) {
+                    carPosition = Math.min(90, carPosition + 5);
+                }
+                
+                updateCarPosition();
+            });
+            
+            // Handle touch/mobile controls
+            $('#game-container').on('touchstart', function(e) {
+                if (!gameActive) return;
+                
+                const touch = e.originalEvent.touches[0];
+                const gameWidth = $(window).width();
+                
+                if (touch.pageX < gameWidth / 2) {
+                    // Touch on left side of screen
+                    carPosition = Math.max(10, carPosition - 5);
+                } else {
+                    // Touch on right side of screen
+                    carPosition = Math.min(90, carPosition + 5);
+                }
+                
+                updateCarPosition();
+                
+                // Prevent scrolling
+                e.preventDefault();
+            });
+            
+            // Handle restart button
+            $('#restart-button').click(function() {
+                initGame();
+            });
+            
+            // Handle window resize
+            $(window).resize(function() {
+                roadWidth = $('#road').width();
+                roadLeft = $('#road').offset().left;
+                updateCarPosition();
+            });
+            
+            // Start the game
+            initGame();
+        });
+    </script>
+</body>
+</html>
