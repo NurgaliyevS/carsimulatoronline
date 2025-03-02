@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Car Simulator</title>
+    <title>Car Simulator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #333;
-            font-family: Arial, sans-serif;
+            background-color: #1e1e2f;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
         }
         
         #game-container {
             position: relative;
             width: 100vw;
             height: 100vh;
-            background-color: #222;
+            background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+            overflow: hidden;
         }
         
         #road {
@@ -25,7 +27,26 @@
             width: 70%;
             height: 100%;
             left: 15%;
-            background-color: #444;
+            background-color: #333;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border-left: 4px solid #ffcc00;
+            border-right: 4px solid #ffcc00;
+        }
+        
+        .grass {
+            position: absolute;
+            height: 100%;
+            width: 15%;
+            background-color: #2d572c;
+            background-image: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 10px, transparent 10px, transparent 20px);
+        }
+        
+        #left-grass {
+            left: 0;
+        }
+        
+        #right-grass {
+            right: 0;
         }
         
         .lane-marker {
@@ -35,41 +56,110 @@
             background-color: white;
             left: 50%;
             transform: translateX(-50%);
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
         }
         
         #car {
             position: absolute;
             width: 50px;
             height: 80px;
-            background-color: red;
+            background-color: #ff5252;
             bottom: 100px;
             left: 50%;
             transform: translateX(-50%);
-            border-radius: 5px;
+            border-radius: 8px;
+            background-image: linear-gradient(to bottom, #ff5252, #c00);
+            box-shadow: 0 0 15px rgba(255, 82, 82, 0.7);
+        }
+        
+        #car:before {
+            content: '';
+            position: absolute;
+            width: 40px;
+            height: 20px;
+            background-color: #6666ff;
+            top: 10px;
+            left: 5px;
+            border-radius: 4px;
+        }
+        
+        #car:after {
+            content: '';
+            position: absolute;
+            width: 40px;
+            height: 10px;
+            background-color: #333;
+            bottom: 10px;
+            left: 5px;
+            border-radius: 2px;
         }
         
         .obstacle {
             position: absolute;
             width: 40px;
             height: 60px;
-            background-color: blue;
-            border-radius: 5px;
+            background: linear-gradient(to bottom, #3498db, #2980b9);
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.7);
         }
         
-        #score-display {
+        .obstacle:before {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 15px;
+            background-color: #6666ff;
+            top: 8px;
+            left: 5px;
+            border-radius: 3px;
+        }
+        
+        .obstacle:after {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 8px;
+            background-color: #333;
+            bottom: 8px;
+            left: 5px;
+            border-radius: 2px;
+        }
+        
+        #dashboard {
             position: absolute;
             top: 20px;
             left: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #ffcc00;
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+            z-index: 10;
+        }
+        
+        #score-display {
             color: white;
             font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
         
         #speed-display {
-            position: absolute;
-            top: 60px;
-            left: 20px;
-            color: white;
+            color: #ffcc00;
             font-size: 18px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        #controls-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #ddd;
         }
         
         #game-over {
@@ -77,35 +167,102 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: red;
+            color: #ff5252;
             font-size: 48px;
             font-weight: bold;
             display: none;
             text-align: center;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid #ff5252;
+            box-shadow: 0 0 30px rgba(255, 82, 82, 0.7);
+            z-index: 100;
+        }
+        
+        #final-score {
+            color: #ffcc00;
+            font-size: 36px;
         }
         
         #restart-button {
             display: block;
             margin: 20px auto;
-            padding: 10px 20px;
-            background-color: white;
-            color: black;
+            padding: 12px 24px;
+            background: linear-gradient(to bottom, #00c853, #009624);
+            color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 18px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        #restart-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                        url('/api/placeholder/800/600') center/cover;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        #game-title {
+            font-size: 60px;
+            color: #ffcc00;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.7);
+        }
+        
+        #start-button {
+            padding: 15px 40px;
+            background: linear-gradient(to bottom, #00c853, #009624);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        #start-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
 <body>
     <div id="game-container">
+        <div id="left-grass" class="grass"></div>
         <div id="road"></div>
+        <div id="right-grass" class="grass"></div>
         <div id="car"></div>
-        <div id="score-display">Score: 0</div>
-        <div id="speed-display">Speed: 0 mph</div>
+        
+        <div id="dashboard">
+            <div id="score-display">Score: 0</div>
+            <div id="speed-display">Speed: 0 mph</div>
+        </div>
+        
+        <div id="controls-info">
+            Use ← → arrow keys or tap screen to move
+        </div>
+        
         <div id="game-over">
             GAME OVER
             <div>Your score: <span id="final-score">0</span></div>
@@ -116,7 +273,7 @@
     <script>
         $(document).ready(function() {
             // Game variables
-            let gameActive = true;
+            let gameActive = false;
             let score = 0;
             let speed = 5;
             let maxSpeed = 15;
@@ -253,6 +410,8 @@
             
             // Initialize the game
             function initGame() {
+                $('#start-screen').fadeOut(500);
+                
                 gameActive = true;
                 score = 0;
                 speed = 5;
