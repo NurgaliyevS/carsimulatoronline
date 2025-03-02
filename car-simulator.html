@@ -245,13 +245,123 @@
             transform: scale(1.1);
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
         }
+        
+        /* Banner Styles */
+        .banner {
+            position: absolute;
+            width: 65%;
+            left: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            color: #333;
+            text-align: center;
+            z-index: 5;
+        }
+        
+        .banner h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #0066cc;
+            font-size: 20px;
+        }
+        
+        .banner p {
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .banner p.bold {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .banner .btn {
+            display: inline-block;
+            width: auto;
+            padding: 8px 20px;
+            background-color: #ff5252;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+        
+        .banner .btn:hover {
+            background-color: #ff0000;
+            transform: scale(1.05);
+        }
+        
+        .banner .credit {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        .banner .credit a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        .banner .credit a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .banner {
+                padding: 10px;
+            }
+            
+            .banner h2 {
+                font-size: 16px;
+            }
+            
+            .banner p {
+                font-size: 12px;
+                margin-bottom: 8px;
+            }
+            
+            .banner p.bold {
+                font-size: 14px;
+            }
+            
+            .banner .btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="game-container">
-        <div id="left-grass" class="grass"></div>
+        <div id="left-grass" class="grass">
+            <!-- Left Banner -->
+            <div class="banner">
+                <h2>PregnantMeal</h2>
+                <p>Healthy Meals for You and Your Baby</p>
+                <p class="bold">Simple meal plans designed for each stage of your pregnancy journey.</p>
+                <a href="https://pregnantmeal.com/" class="btn" target="_blank">VISIT SITE</a>
+                <p class="credit">Made by <a href="https://x.com/tech_nurgaliyev" target="_blank">@tech_nurgaliyev</a></p>
+            </div>
+        </div>
         <div id="road"></div>
-        <div id="right-grass" class="grass"></div>
+        <div id="right-grass" class="grass">
+            <!-- Right Banner -->
+            <div class="banner">
+                <h2>MVPAgency</h2>
+                <p class="bold">From idea to MVP launch in 2 weeks</p>
+                <p>No commitment, learn how we can help you launch faster</p>
+                <a href="https://mvpagency.org/" class="btn" target="_blank">VISIT SITE</a>
+                <p class="credit">Made by <a href="https://x.com/tech_nurgaliyev" target="_blank">@tech_nurgaliyev</a></p>
+            </div>
+        </div>
         <div id="car"></div>
         
         <div id="dashboard">
